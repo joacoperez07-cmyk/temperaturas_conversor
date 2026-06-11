@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor de Temperatura</title>
+    <!-- Fuentes de Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome para iconos dinámicos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* Seteos base */
+        * { box-sizing: border-box; }
+        body { 
+            background-color: #e2e8f0; 
+            display: grid; 
+            place-items: center; 
+            margin: 0; 
+            min-height: 100vh; 
+            padding: 20px; 
+        }
+
+        /* Contenedor principal estilo App */
+        .slide-container {
+            align-items: center;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            font-family: 'Lato', sans-serif;
+            min-height: 720px;
+            justify-content: flex-start;
+            overflow: hidden;
+            padding: 50px 60px;
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            /* Transición suave para el cambio de clima */
+            transition: background 1.5s ease-in-out;
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+        }
+
+        /* Capa de partículas animadas - pointer-events: none es CRUCIAL para poder hacer clic en los inputs */
+        #particles-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none; 
+        }
+
+        /* Animaciones para las partículas */
+        .weather-particle {
+            position: absolute;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+            pointer-events: none;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(800px) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+
+        @keyframes fallDown {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(800px) rotate(360deg); opacity: 0; }
+        }
+
+        /* Paneles de cristal (Glassmorphism) */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.05);
+            z-index: 10;
+            position: relative;
+        }
+
+        /* Estilos de los inputs */
+        .input-group {
+            margin-bottom: 25px;
+        }
+        .input-group:last-child {
+            margin-bottom: 0;
+        }
+        .input-group label {
+            display: block;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 16px;
+            color: #334155;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .input-wrapper {
+            display: flex;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .input-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+        }
+        .input-wrapper input {
+            flex-grow: 1;
+            border: none;
+            padding: 16px 20px;
+            font-family: 'Lato', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+            outline: none;
+            background: transparent;
+            width: 100%;
+        }
+        
+        /* Ocultar flechas del input numérico */
+        .input-wrapper input::-webkit-outer-spin-button,
+        .input-wrapper input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        .input-wrapper input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* Caja de la unidad (°C, °F, K) */
+        .input-wrapper .unit {
+            background: var(--accent);
+            color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 24px;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 90px;
+        }
+
+        /* Responsive Layout */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            width: 100%;
+            flex-grow: 1;
+            z-index: 10;
+        }
+        
+        @media (max-width: 860px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            .slide-container {
+                padding: 30px;
+            }
+            .glass-panel {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="slide-container" id="slide1">
+    
+    <!-- Capa de fondo animado generada por JS -->
+    <div id="particles-layer"></div>
+
+    <!-- Encabezado (Título y Créditos) -->
+    <div style="z-index: 10; text-align: center; width: 100%; margin-bottom: 40px;">
+        <h1 style="font-family: 'Poppins', sans-serif; font-size: clamp(32px, 5vw, 50px); font-weight: 700; color: #1e293b; margin: 0 0 12px 0;">
+            Conversor de Temperatura
+        </h1>
+        <div style="display: inline-block; background: rgba(255,255,255,0.85); padding: 8px 24px; border-radius: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <p style="font-family: 'Lato', sans-serif; font-size: 16px; font-weight: 700; color: #334155; margin: 0;">
+                Ing. Joaquín Ignacio Pérez <span style="color:#94a3b8; font-weight:400; margin:0 5px;">|</span> Asistido por Gemini IA
+            </p>
+        </div>
+    </div>
+
+    <!-- Cuerpo Principal de la App -->
+    <div class="content-grid">
+        
+        <!-- Columna Izquierda: Entradas de Texto -->
+        <div class="glass-panel" style="display: flex; flex-direction: column; justify-content: center;">
+            
+            <div class="input-group">
+                <label for="celsius">Grados Celsius</label>
+                <div class="input-wrapper" style="--accent: #3b82f6;">
+                    <input type="number" id="celsius" placeholder="0" step="any">
+                    <div class="unit">°C</div>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="fahrenheit">Grados Fahrenheit</label>
+                <div class="input-wrapper" style="--accent: #f59e0b;">
+                    <input type="number" id="fahrenheit" placeholder="32" step="any">
+                    <div class="unit">°F</div>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="kelvin">Kelvin (Absoluto)</label>
+                <div class="input-wrapper" style="--accent: #10b981;">
+                    <input type="number" id="kelvin" placeholder="273.15" step="any">
+                    <div class="unit">K</div>
+                </div>
+            </div>
+
+            <button id="reset-btn" style="margin-top: 15px; padding: 12px; background: #e2e8f0; border: none; border-radius: 10px; font-family: 'Poppins', sans-serif; font-weight: 600; color: #475569; cursor: pointer; transition: all 0.2s;">
+                <i class="fa-solid fa-rotate-right" style="margin-right: 8px;"></i> Limpiar Valores
+            </button>
+        </div>
+
+        <!-- Columna Derecha: Estado Visual / Feedback Climático -->
+        <div class="glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+            
+            <!-- Contenedor del Icono Gigante -->
+            <div id="icon-box" style="width: 160px; height: 160px; border-radius: 50%; background: #ffffff; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; margin-bottom: 30px; transition: all 0.5s ease;">
+                <i id="weather-icon" class="fa-solid fa-cloud-sun" style="font-size: 70px; color: #0ea5e9; transition: color 0.5s ease;"></i>
+            </div>
+            
+            <!-- Textos de Estado -->
+            <h2 id="temp-status" style="font-family: 'Poppins', sans-serif; font-size: 36px; font-weight: 700; color: #1e293b; margin: 0 0 12px 0;">Clima Fresco</h2>
+            <p id="temp-desc" style="font-family: 'Lato', sans-serif; font-size: 18px; color: #475569; margin: 0; line-height: 1.5;">
+                Día agradable. El agua se mantiene en un estado líquido estable.
+            </p>
+            
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Lógica de la Aplicación -->
+<script>
+    // Referencias a los inputs y elementos visuales
+    const celsiusInput = document.getElementById('celsius');
+    const fahrenheitInput = document.getElementById('fahrenheit');
+    const kelvinInput = document.getElementById('kelvin');
+    
+    const tempStatus = document.getElementById('temp-status');
+    const tempDesc = document.getElementById('temp-desc');
+    const weatherIcon = document.getElementById('weather-icon');
+    const slide = document.getElementById('slide1');
+    const resetBtn = document.getElementById('reset-btn');
+
+    // Función para crear partículas atmosféricas dinámicas
+    function createParticles(type, count) {
+        const layer = document.getElementById('particles-layer');
+        layer.innerHTML = ''; // Limpiar partículas previas
+        
+        // Configuración visual por tipo de clima
+        const config = {
+            'cold': { icon: 'fa-snowflake', color: 'rgba(255,255,255,0.8)', anim: 'fallDown' },
+            'rain': { icon: 'fa-droplet', color: 'rgba(255, 255, 255, 0.6)', anim: 'fallDown' },
+            'mild': { icon: 'fa-leaf', color: 'rgba(16, 185, 129, 0.4)', anim: 'fallDown' },
+            'hot': { icon: 'fa-sun', color: 'rgba(255, 255, 255, 0.5)', anim: 'floatUp' },
+            'extreme': { icon: 'fa-fire', color: 'rgba(239, 68, 68, 0.4)', anim: 'floatUp' }
+        };
+
+        for(let i = 0; i < count; i++) {
+            let el = document.createElement('i');
+            el.className = `fa-solid ${config[type].icon} weather-particle`;
+            el.style.left = Math.random() * 100 + '%';
+            el.style.fontSize = (Math.random() * 20 + 15) + 'px';
+            el.style.color = config[type].color;
+            el.style.animationName = config[type].anim;
+            el.style.animationDuration = (Math.random() * 4 + 6) + 's';
+            el.style.animationDelay = (Math.random() * 3) + 's';
+            layer.appendChild(el);
+        }
+    }
+
+    // Función principal para actualizar la UI visual
+    function updateUI(temp) {
+        let bg, status, desc, iconClass, iconColor, pType;
+
+        if (isNaN(temp)) {
+            // Valor por defecto si se borra el campo
+            temp = 20;
+        }
+
+        if (temp <= 0) {
+            bg = 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)';
+            status = 'Frío Extremo';
+            desc = 'Temperatura de congelación. El agua se convierte en hielo.';
+            iconClass = 'fa-snowflake';
+            iconColor = '#6366f1';
+            pType = 'cold';
+        } else if (temp > 0 && temp <= 15) {
+            bg = 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)';
+            status = 'Clima Fresco';
+            desc = 'Temperaturas bajas. Ideal para abrigarse un poco.';
+            iconClass = 'fa-cloud-showers-heavy';
+            iconColor = '#3b82f6';
+            pType = 'rain';
+        } else if (temp > 15 && temp <= 30) {
+            bg = 'linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)';
+            status = 'Agradable';
+            desc = 'Condiciones óptimas. Clima templado y perfecto.';
+            iconClass = 'fa-sun';
+            iconColor = '#10b981';
+            pType = 'mild';
+        } else if (temp > 30 && temp < 60) {
+            bg = 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)';
+            status = 'Calor Intenso';
+            desc = 'Temperaturas altas. Importante mantenerse hidratado.';
+            iconClass = 'fa-temperature-high';
+            iconColor = '#f59e0b';
+            pType = 'hot';
+        } else {
+            bg = 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)';
+            status = 'Ebullición';
+            desc = 'Calor extremo. El agua ha alcanzado el punto de ebullición.';
+            iconClass = 'fa-fire';
+            iconColor = '#ef4444';
+            pType = 'extreme';
+        }
+
+        // Aplicar estilos
+        slide.style.background = bg;
+        tempStatus.textContent = status;
+        tempDesc.textContent = desc;
+        weatherIcon.className = `fa-solid ${iconClass}`;
+        weatherIcon.style.color = iconColor;
+
+        // Generar partículas correspondientes
+        createParticles(pType, 15);
+    }
+
+    // Utilidad para redondear a 2 decimales para mostrar
+    function format(value) {
+        if (isNaN(value)) return '';
+        return Math.round(value * 100) / 100;
+    }
+
+    // --- Lógica de Conversión Bidireccional ---
+    
+    // De Celsius a F y K
+    celsiusInput.addEventListener('input', (e) => {
+        const c = parseFloat(e.target.value);
+        if(!isNaN(c)) {
+            fahrenheitInput.value = format((c * 9/5) + 32);
+            kelvinInput.value = format(c + 273.15);
+            updateUI(c);
+        } else {
+            fahrenheitInput.value = '';
+            kelvinInput.value = '';
+            updateUI(NaN); // Restaurar a clima neutral
+        }
+    });
+
+    // De Fahrenheit a C y K
+    fahrenheitInput.addEventListener('input', (e) => {
+        const f = parseFloat(e.target.value);
+        if(!isNaN(f)) {
+            const c = (f - 32) * 5/9;
+            celsiusInput.value = format(c);
+            kelvinInput.value = format(c + 273.15);
+            updateUI(c);
+        } else {
+            celsiusInput.value = '';
+            kelvinInput.value = '';
+            updateUI(NaN);
+        }
+    });
+
+    // De Kelvin a C y F
+    kelvinInput.addEventListener('input', (e) => {
+        const k = parseFloat(e.target.value);
+        if(!isNaN(k)) {
+            // Prevenir valores negativos absolutos lógicos
+            const validK = Math.max(0, k); 
+            const c = validK - 273.15;
+            celsiusInput.value = format(c);
+            fahrenheitInput.value = format((c * 9/5) + 32);
+            updateUI(c);
+        } else {
+            celsiusInput.value = '';
+            fahrenheitInput.value = '';
+            updateUI(NaN);
+        }
+    });
+
+    // Botón de limpieza
+    resetBtn.addEventListener('click', () => {
+        celsiusInput.value = '';
+        fahrenheitInput.value = '';
+        kelvinInput.value = '';
+        updateUI(20); // Clima neutral por defecto
+        celsiusInput.focus();
+    });
+
+    // Estado Inicial de la app (20°C)
+    const initTemp = 20;
+    celsiusInput.value = initTemp;
+    fahrenheitInput.value = format((initTemp * 9/5) + 32);
+    kelvinInput.value = format(initTemp + 273.15);
+    updateUI(initTemp);
+
+</script>
+</body>
+</html>
+```
